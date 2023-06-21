@@ -108,12 +108,12 @@ Once you run the two conversion commands, the output folder will have the follow
 ```
 openjourney-6-bit
 ├── original
-    ├── Resources
-    ├── Stable_Diffusion_version_prompthero_openjourney-v4_safety_checker.mlpackage
-    ├── Stable_Diffusion_version_prompthero_openjourney-v4_text_encoder.mlpackage
-    ├── Stable_Diffusion_version_prompthero_openjourney-v4_unet.mlpackage
-    ├── Stable_Diffusion_version_prompthero_openjourney-v4_vae_decoder.mlpackage
-    └── Stable_Diffusion_version_prompthero_openjourney-v4_vae_encoder.mlpackage
+│   ├── Resources
+│   ├── Stable_Diffusion_version_prompthero_openjourney-v4_safety_checker.mlpackage
+│   ├── Stable_Diffusion_version_prompthero_openjourney-v4_text_encoder.mlpackage
+│   ├── Stable_Diffusion_version_prompthero_openjourney-v4_unet.mlpackage
+│   ├── Stable_Diffusion_version_prompthero_openjourney-v4_vae_decoder.mlpackage
+│   └── Stable_Diffusion_version_prompthero_openjourney-v4_vae_encoder.mlpackage
 └── split_einsum_v2
     ├── Resources
     ├── Stable_Diffusion_version_prompthero_openjourney-v4_safety_checker.mlpackage
