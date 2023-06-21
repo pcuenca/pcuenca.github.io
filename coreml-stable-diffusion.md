@@ -17,12 +17,12 @@ The conversion script will automatically download models from the Hugging Face H
 
 An easy way to locate interesting models is browsing the [Diffusers Models Gallery](https://huggingface.co/spaces/huggingface-projects/diffusers-gallery).
 
-In this guide we'll be converting [Open Journey v4 by PromptHero](https://huggingface.co/prompthero/openjourney-v4).
-
 ![Screenshot: Diffusers Models Gallery](/assets/diffusers-gallery.jpg)
 
+In this guide we'll be converting [Open Journey v4 by PromptHero](https://huggingface.co/prompthero/openjourney-v4).
+
 - Ensure the model is in [`diffusers`](https://github.com/huggingface/diffusers) format. If it's just a single file with a "checkpoint", you can use [this Space](https://huggingface.co/spaces/diffusers/sd-to-diffusers) to convert it to diffusers.
-- If you find a model that is not available in the Hub, consider uploading it for free. All you need is a Hub account, and you can make models public or private for your own use.
+- If you find a model that is not available in the Hub, consider uploading it for free. All you need is a Hugging Face Hub account, and you can make models public or private for your own use.
 
 #### Decide your target hardware
 
@@ -107,6 +107,13 @@ Once you run the two conversion commands, the output folder will have the follow
 
 ```
 openjourney-6-bit
+├── original
+    ├── Resources
+    ├── Stable_Diffusion_version_prompthero_openjourney-v4_safety_checker.mlpackage
+    ├── Stable_Diffusion_version_prompthero_openjourney-v4_text_encoder.mlpackage
+    ├── Stable_Diffusion_version_prompthero_openjourney-v4_unet.mlpackage
+    ├── Stable_Diffusion_version_prompthero_openjourney-v4_vae_decoder.mlpackage
+    └── Stable_Diffusion_version_prompthero_openjourney-v4_vae_encoder.mlpackage
 └── split_einsum_v2
     ├── Resources
     ├── Stable_Diffusion_version_prompthero_openjourney-v4_safety_checker.mlpackage
@@ -116,13 +123,13 @@ openjourney-6-bit
     └── Stable_Diffusion_version_prompthero_openjourney-v4_vae_encoder.mlpackage
 ```
 
-* The `mlpackage` files are the Core ML versions of each component of the Stable Diffusion model. These files are suitable for integration in a native app, or to run inference using Python [we'll see below](#cli).
+* The `mlpackage` files are the Core ML versions of each component of the Stable Diffusion model. These files are [suitable for integration in a native app](#use-the-core-ml-models), or to run inference using Python [we'll see below](#cli).
 * The `Resources` folders contain the compiled versions of the same files, wich the extension `.mlmodelc`. These are suitable for download in a native app, or to run inference with Swift.
 
 <a name="cli"></a>
 #### Use the command-line tools to verify conversion
 
-This requires a Mac, as you need Apple's `CoreML` framework in order to run Core ML models. The first time you run inference it will take several minutes, as `CoreML` will compile the models (if necessary), analyze them and decide what compute engines to use for best performance. Subsequent runs will be much faster as the planning phase will be cached.
+This requires a Mac, because you need Apple's `CoreML` framework in order to run Core ML models. The first time you run inference it will take several minutes, as `CoreML` will compile the models (if necessary), analyze them and decide what compute engines to use for best performance. Subsequent runs will be much faster as the planning phase will be cached.
 
 To use the Python CLI, use the `-i` argument to indicate the location where all the `mlpackage` files reside. Be sure to use the same `model-version` you used when converting:
 
@@ -136,14 +143,14 @@ python -m python_coreml_stable_diffusion.pipeline \
     --seed 43
 ```
 
-There's also a Swift CLI that is similar to the Python one. In this case, you need to point it to the location where the compiled `Resources` are, and it's not necessary to indicate what the original model version was:
+There's also a Swift CLI that is similar to the Python one. In this case, you need to point it to the location where the compiled `Resources` are, and it's not necessary to indicate what the original model version was. In this example we'll test the `ORIGINAL` variant:
 
 ```
 swift run StableDiffusionSample \
     "a photo of an astronaut riding a horse on mars" \
-    --resource-path models/openjourney-6-bit/split_einsum_v2/Resources \
-    --compute-units cpuAndNeuralEngine \
-    --output-path output/swift \
+    --resource-path models/openjourney-6-bit/original/Resources \
+    --compute-units cpuAndGPU \
+    --output-path . \
     --seed 43
 ```
 
@@ -154,14 +161,30 @@ The first time you run the swift CLI, it will be compiled for you. Use `--help` 
 We'll perform the following actions:
 
 1. Rename the `Resources` folder `compiled`.
-2. Create two `zip` archives with the contents of each one of the `compiled` folders. These archives are useful for third-party apps.
-3. Create a new model in the Hub and upload all these contents to it. You can also open a pull request to the original repo instead of creating a new one.
-4. Don't forget to create a model card to acknowleged the original authors and describe the contents of the model.
+2. Put all the `.mlpackage` files inside a folder called `packages`.
+3. Create two `zip` archives with the contents of each one of the `compiled` folders. These archives are useful for third-party apps.
+4. Create a new model in the Hub and upload all these contents to it. You can also open a pull request to the original repo instead of creating a new one.
+5. Don't forget to create a model card (a `README.md` file) to acknowlege the original authors and describe the contents of the model.
+6. **[Add the `core-ml` tag to the YAML section of the model card](https://huggingface.co/pcuenq/coreml-openjourney-v4/blob/main/README.md?code=true#L6)**. This is important for search and discoverability!
 
-This is the file structure just before upload in my filesystem:
+This is the file structure in my filesystem, just before upload:
 
-And [this is the repo]() I uploaded it to.
+```
+openjourney-6-bit
+├── README.md
+├── coreml-prompthero-openjourney-v4-palettized_original_compiled.zip
+├── coreml-prompthero-openjourney-v4-palettized_split_einsum_compiled.zip
+├── original
+│   ├── compiled
+│   └── packages
+└── split_einsum_v2
+    ├── compiled
+    └── packages
+```
 
+And [this is the repo](https://huggingface.co/pcuenq/coreml-openjourney-v4) I uploaded everything to.
+
+<a href="use-the-core-ml-models"></a>
 #### Use the Core ML models
 
 To run the models in a third party app, you'll typically need to configure the app to download any of the zip files we created earlier. Some app examples are [Swift Diffusers](https://github.com/huggingface/swift-coreml-diffusers) or [Mochi Diffusion](https://github.com/godly-devotion/MochiDiffusion), which was initially based on the former.
@@ -170,4 +193,4 @@ If you want to integrate the models in your own app, you can drag and drop the `
 
 #### Feedback
 
-Want to suggest improvements or fixes to this documentation? Visit [the repo]({{ site.github.repository_url }}) to open an issue or a PR :)
+Want to suggest improvements or fixes to this documentation? Visit [the repo]({{ site.github.repository_url }}) to report an issue or open a PR :)
