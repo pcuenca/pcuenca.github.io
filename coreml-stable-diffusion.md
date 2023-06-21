@@ -106,13 +106,61 @@ python -m python_coreml_stable_diffusion.torch2coreml \
 Once you run the two conversion commands, the output folder will have the following structure:
 
 ```
+openjourney-6-bit
+└── split_einsum_v2
+    ├── Resources
+    ├── Stable_Diffusion_version_prompthero_openjourney-v4_safety_checker.mlpackage
+    ├── Stable_Diffusion_version_prompthero_openjourney-v4_text_encoder.mlpackage
+    ├── Stable_Diffusion_version_prompthero_openjourney-v4_unet.mlpackage
+    ├── Stable_Diffusion_version_prompthero_openjourney-v4_vae_decoder.mlpackage
+    └── Stable_Diffusion_version_prompthero_openjourney-v4_vae_encoder.mlpackage
 ```
 
+* The `mlpackage` files are the Core ML versions of each component of the Stable Diffusion model. These files are suitable for integration in a native app, or to run inference using Python [we'll see below](#cli).
+* The `Resources` folders contain the compiled versions of the same files, wich the extension `.mlmodelc`. These are suitable for download in a native app, or to run inference with Swift.
+
+<a name="cli"></a>
 #### Use the command-line tools to verify conversion
+
+This requires a Mac, as you need Apple's `CoreML` framework in order to run Core ML models. The first time you run inference it will take several minutes, as `CoreML` will compile the models (if necessary), analyze them and decide what compute engines to use for best performance. Subsequent runs will be much faster as the planning phase will be cached.
+
+To use the Python CLI, use the `-i` argument to indicate the location where all the `mlpackage` files reside. Be sure to use the same `model-version` you used when converting:
+
+```
+python -m python_coreml_stable_diffusion.pipeline \
+    --model-version prompthero/openjourney-v4 \
+    --prompt "a photo of an astronaut riding a horse on mars" \
+    -i models/openjourney-6-bit/split_einsum_v2 \
+    --compute-unit CPU_AND_NE \
+    -o output/split_einsum_v2 \
+    --seed 43
+```
+
+There's also a Swift CLI that is similar to the Python one. In this case, you need to point it to the location where the compiled `Resources` are, and it's not necessary to indicate what the original model version was:
+
+```
+swift run StableDiffusionSample \
+    "a photo of an astronaut riding a horse on mars" \
+    --resource-path models/openjourney-6-bit/split_einsum_v2/Resources \
+    --compute-units cpuAndNeuralEngine \
+    --output-path output/swift \
+    --seed 43
+```
+
+The first time you run the swift CLI, it will be compiled for you. Use `--help` to display a list of all the options you can use.
 
 #### Upload Core ML models to the Hub
 
+We'll perform the following actions:
 
+1. Rename the `Resources` folder `compiled`.
+2. Create two `zip` archives with the contents of each one of the `compiled` folders. These archives are useful for third-party apps.
+3. Create a new model in the Hub and upload all these contents to it. You can also open a pull request to the original repo instead of creating a new one.
+4. Don't forget to create a model card to acknowleged the original authors and describe the contents of the model.
+
+This is the file structure just before upload in my filesystem:
+
+And [this is the repo]() I uploaded it to.
 
 #### Use the Core ML models
 
